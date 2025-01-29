@@ -22,6 +22,9 @@ public class TimeService {
     final TimeRepository timeRepository;
 
     @Autowired
+    private JogadorRepository jogadorRepository;
+
+    @Autowired
     private TimeRepositoryImpl timeRepositoryImpl;
 
     public TimeService(TimeRepository timeRepository) {
@@ -36,6 +39,11 @@ public class TimeService {
         TimeToSave.setHistoria(time.historia());
         TimeToSave.setCor(time.cor());
         TimeToSave.setEstado(time.estado());
+        if (time.jogadores() != null && !time.jogadores().isEmpty()) {
+            List<Jogador> jogadoresSalvos = jogadorRepository.saveAll(time.jogadores());
+            timeToSave.setJogadores(jogadoresSalvos);
+        }
+
         return Optional.of(this.timeRepository.save(TimeToSave));
     }
 
@@ -67,12 +75,54 @@ public class TimeService {
 
     public Page<Time> pesquisa(
             Pageable pageable,
-            String nome
+            String nome,
+            String dataFundacao,
+            String estado,
+            String cor,
+            String historia
     ) {
-        return timeRepositoryImpl.findTimeByName(
+        return timeRepositoryImpl.findAllTimeByFiltro(
                 pageable,
-                nome
+                nome,
+                dataFundacao,
+                estado,
+                cor,
+                historia
         );
+        @Transactional
+        public Time adicionarJogadorAoTime(Long id, Jogador jogadorNovo) {
+            Time time = timeRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Time não encontrado com ID: " + id));
+            if (jogadorNovo.getNome() == null || jogadorNovo.getPosicao() == null) {
+                throw new RuntimeException("Dados do jogador inválidos");
+            }
+            jogadorNovo.setTime(time);
+            jogadorRepository.save(jogadorNovo);
+            time.getJogadores().add(jogadorNovo);
+            return timeRepository.save(time);
+        }
+
+
+        @Transactional
+        public List<Jogador> listarJogadoresDoTime(Long id) {
+            Time time = timeRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Time não encontrado com ID: " + id));
+            return time.getJogadores();
+        }
+        @Transactional
+        public Time removerJogadorDoTime(Long id, Long id) {
+            Time time = timeRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Time não encontrado com ID: " + id));
+            Jogador jogador = jogadorRepository.findById(jogadorId)
+                    .orElseThrow(() -> new RuntimeException("Jogador não encontrado com ID: " + id));
+            if (!time.getJogadores().contains(jogador)) {
+                throw new RuntimeException("O jogador não pertence a este time.");
+            }
+            time.getJogadores().remove(jogador);
+            jogador.setTime(null);
+            jogadorRepository.save(jogador);
+            return timeRepository.save(time);
+        }
     }
 //    public void adicionarJogador(Jogador jogador) {
 //        jogador.setTime(this);

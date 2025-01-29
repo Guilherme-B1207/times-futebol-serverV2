@@ -12,7 +12,7 @@ public class TimeRepositoryImpl {
 
     @Autowired
     private EntityManager entityManager;
-    public Page<Time> findAllTime(
+    public Page<Time> findAllTimeByFiltro(
             Pageable pageable,
             String nome,
             String dataFundacao,

@@ -28,13 +28,13 @@ public class Time implements Serializable {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Column(name = "data_fundacao")
-    private LocalDateTime dataFundacao;
+    private LocalDate dataFundacao;
 
     @Column(name = "historia", columnDefinition = "text") // passa para o postgres que é sem limite de caracteres
     private String historia;
 
-//    @OneToMany(mappedBy = "time", fetch = FetchType.LAZY)
-//    private List<Jogador> jogadores = new ArrayList<>();
+    @OneToMany(mappedBy = "time", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Jogador> jogadores = new ArrayList<>();
 
     @Column(name = "cor")
     private String cor;

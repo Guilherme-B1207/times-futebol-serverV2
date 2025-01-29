@@ -33,13 +33,38 @@ public class TimeResource {
     }
 
     @PostMapping
-    public Optional<Time> salvar(@RequestBody TimeCreateRecord time){
-        return timeService.salvar(time);
+    public ResponseEntity<Time> salvar(@RequestBody TimeCreateRecord time) {
+        Optional<Time> novoTime = timeService.salvar(time);
+        return novoTime.map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @DeleteMapping("/{id}")
     public Optional<Time> excluir(@PathVariable("id") Long id) {
         return timeService.excluir(id);
+    }
+
+    @PostMapping("/{timeId}/jogadores")
+    public ResponseEntity<Time> adicionarJogadorAoTime(
+            @PathVariable Long id,
+            @RequestBody Jogador jogador) {
+        Time timeAtualizado = timeService.adicionarJogadorAoTime(id, jogador);
+        return ResponseEntity.ok(timeAtualizado);
+    }
+
+    @GetMapping("/{timeId}/jogadores")
+    public ResponseEntity<List<Jogador>> listarJogadoresDoTime(@PathVariable Long timeId) {
+        List<Jogador> jogadores = timeService.listarJogadoresDoTime(timeId);
+        return ResponseEntity.ok(jogadores);
+    }
+
+
+    @DeleteMapping("/{timeId}/jogadores/{jogadorId}")
+    public ResponseEntity<Time> removerJogadorDoTime(
+            @PathVariable Long id,
+            @PathVariable Long id) {
+        Time timeAtualizado = timeService.removerJogadorDoTime(id, id);
+        return ResponseEntity.ok(timeAtualizado);
     }
 
     @PutMapping
