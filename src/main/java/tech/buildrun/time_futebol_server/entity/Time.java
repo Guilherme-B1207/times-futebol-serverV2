@@ -3,15 +3,18 @@ package tech.buildrun.time_futebol_server.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 
 @Entity
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "time")
@@ -34,14 +37,13 @@ public class Time implements Serializable {
     private String historia;
 
     @OneToMany(mappedBy = "time", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Jogador> jogadores = new ArrayList<>();
+    private List<TimeJogador> jogadores = new ArrayList<>();
 
     @Column(name = "cor")
     private String cor;
 
     @Column(name = "estado")
     private String estado;
-
 
     public Long getId() {
         return id;
@@ -59,6 +61,14 @@ public class Time implements Serializable {
         this.nome = nome;
     }
 
+    public LocalDate getDataFundacao() {
+        return dataFundacao;
+    }
+
+    public void setDataFundacao(LocalDate dataFundacao) {
+        this.dataFundacao = dataFundacao;
+    }
+
     public String getHistoria() {
         return historia;
     }
@@ -67,21 +77,13 @@ public class Time implements Serializable {
         this.historia = historia;
     }
 
-    public LocalDateTime getDataFundacao() {
-        return dataFundacao;
+    public List<TimeJogador> getJogadores() {
+        return jogadores;
     }
 
-    public void setDataFundacao(LocalDateTime dataFundacao) {
-        this.dataFundacao = dataFundacao;
+    public void setJogadores(List<TimeJogador> jogadores) {
+        this.jogadores = jogadores;
     }
-
-//    public List<Jogador> getJogadores() {
-//        return jogadores;
-//    }
-//
-//    public void setJogadores(List<Jogador> jogadores) {
-//        this.jogadores = jogadores;
-//    }
 
     public String getCor() {
         return cor;
@@ -92,7 +94,7 @@ public class Time implements Serializable {
     }
 
     public String getEstado() {
-        return this.estado;
+        return estado;
     }
 
     public void setEstado(String estado) {

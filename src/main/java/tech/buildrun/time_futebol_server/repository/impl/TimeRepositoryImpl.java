@@ -7,109 +7,92 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import tech.buildrun.time_futebol_server.entity.Time;
+import java.time.LocalDate;
 
 public class TimeRepositoryImpl {
 
     @Autowired
     private EntityManager entityManager;
+
     public Page<Time> findAllTimeByFiltro(
             Pageable pageable,
             String nome,
-            String dataFundacao,
+            LocalDate dataFundacao,
             String estado,
             String cor,
             String historia
     ) {
-        StringBuilder sql = new StringBuilder();
-        sql.append(" SELECT t from Time t where 1 = 1 ");
-        if(nome!= null) {
-            sql.append(" AND UNACCENT(UPPER(t.nome)) like UNACCENT(UPPER(:nome)) ");
-        }
-        if(dataFundacao!= null){
-            sql.append(" AND t.dataFundacao = :dataFundacao ");
-        }
-        if(estado!= null){
-            sql.append(" AND UNACCENT(UPPER(t.estado)) like UNACCENT(UPPER(:estado)) ");
-        }
-        if(cor!= null){
-            sql.append(" AND t.cor = :cor ");
-        }
-        if(historia!= null){
-            sql.append(" AND UNACCENT(UPPER(t.historia)) like UNACCENT(UPPER(:historia)) ");
-        }
-        sql.append(" order by q.id desc ");
-        TypedQuery<Time> query = entityManager.createQuery(sql.toString(), Time.class);
+        StringBuilder hql = new StringBuilder();
+        hql.append(
+                " SELECT t "
+        );
+        hql.append(" FROM Time t ");
+        hql.append(getWheres(nome, dataFundacao, estado, cor, historia));
+        hql.append(" ORDER BY t.id DESC ");
+
+        TypedQuery<Time> query = entityManager.createQuery(
+                hql.toString(),
+                Time.class
+        );
         query.setFirstResult(pageable.getPageNumber() * pageable.getPageSize());
         query.setMaxResults(pageable.getPageSize());
+        setParameters(nome, dataFundacao, estado, cor, historia, query);
 
-        if (nome != null) {
-            query.setParameter("nome", "%" + nome.toUpperCase() + "%");
-        }
-        if (dataFundacao!= null) {
-            query.setParameter("dataFundacao", dataFundacao);
-        }
-        if (estado!= null) {
-            query.setParameter("estado", "%" + estado.toUpperCase() + "%");
-        }
-        if (cor!= null) {
-            query.setParameter("cor", cor);
-        }
-        if (historia!= null) {
-            query.setParameter("historia", "%" + historia.toUpperCase() + "%");
-        }
-        TypedQuery<Long> queryCount = getCountTypedQuery(
-                nome,
-                dataFundacao,
-                estado,
-                cor,
-                historia
-        );
-
+        TypedQuery<Long> queryCount = getCountTypedQuery(nome, dataFundacao, estado, cor, historia);
         return new PageImpl(query.getResultList(), pageable, queryCount.getSingleResult());
     }
 
-    private TypedQuery<Long> getCountTypedQuery(
-            String nome,
-            String dataFundacao,
-            String estado,
-            String cor,
-            String historia
-    ) {
-        StringBuilder sqlCount = new StringBuilder();
-        sqlCount.append(" select count(t.id) from Time t where 1 = 1 ");
-        if(nome!= null) {
-            sqlCount.append(" AND UNACCENT(UPPER(t.nome)) like UNACCENT(UPPER(:nome)) ");
-        }
-        if(dataFundacao!= null){
-            sqlCount.append(" AND t.dataFundacao = :dataFundacao ");
-        }
-        if(estado!= null){
-            sqlCount.append(" AND UNACCENT(UPPER(t.estado)) like UNACCENT(UPPER(:estado)) ");
-        }
-        if(cor!= null){
-            sqlCount.append(" AND t.cor = :cor ");
-        }
-        if(historia!= null){
-            sqlCount.append(" AND UNACCENT(UPPER(t.historia)) like UNACCENT(UPPER(:historia)) ");
-        }
-        TypedQuery<Long> queryCount = entityManager.createQuery(sqlCount.toString(), Long.class);
+    private String getWheres(String nome,
+                              LocalDate dataFundacao,
+                              String estado,
+                              String cor,
+                              String historia) {
+        StringBuilder where = new StringBuilder();
+        where.append(" WHERE 1 = 1 ");
 
         if (nome != null) {
-            queryCount.setParameter("nome", "%" + nome + "%");
+            where.append(" AND t.nome LIKE :nome ");
         }
-        if (dataFundacao!= null) {
-            queryCount.setParameter("dataFundacao", dataFundacao);
+
+//        if (!isEmpty(filter.getAcronym())) {
+//            where.append(" AND d.acronym LIKE :acronym ");
+//        }
+//
+//        if (!isEmpty(filter.getPhase())) {
+//            where.append(" AND d.phase = :phase ");
+//        }
+        return where.toString();
+    }
+
+    private void setParameters(String nome,
+                               LocalDate dataFundacao,
+                               String estado,
+                               String cor,
+                               String historia, TypedQuery<?> query) {
+        if (nome != null) {
+            query.setParameter("nome", "%" + nome + "%");
         }
-        if (estado!= null) {
-            queryCount.setParameter("estado", "%" + estado + "%");
-        }
-        if (cor!= null) {
-            queryCount.setParameter("cor", cor);
-        }
-        if (historia!= null) {
-            queryCount.setParameter("historia", "%" + historia + "%");
-        }
-        return queryCount;
+//        if (!isEmpty(filter.getAcronym())) {
+//            query.setParameter("acronym", "%" +filter.getAcronym() + "%");
+//        }
+//        if (!isEmpty(filter.getPhase())) {
+//            query.setParameter("phase", filter.getPhase());
+//
+//        }
+    }
+
+    private TypedQuery<Long> getCountTypedQuery(String nome,
+                                                LocalDate dataFundacao,
+                                                String estado,
+                                                String cor,
+                                                String historia) {
+        StringBuilder hql = new StringBuilder();
+        hql.append(" SELECT COUNT(t.id) ");
+        hql.append(" FROM Time t ");
+        hql.append(getWheres(nome, dataFundacao, estado, cor, historia));
+
+        TypedQuery<Long> query = entityManager.createQuery(hql.toString(), Long.class);
+        setParameters(nome, dataFundacao, estado, cor, historia, query);
+        return query;
     }
 }
-

@@ -4,15 +4,24 @@ import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+//import tech.buildrun.time_futebol_server.dto.JogadorDTO;
+import tech.buildrun.time_futebol_server.entity.Jogador;
 import tech.buildrun.time_futebol_server.entity.Time;
-import tech.buildrun.time_futebol_server.infra.error.ErrorResponse;
+import tech.buildrun.time_futebol_server.entity.TimeJogador;
 import tech.buildrun.time_futebol_server.record.TimeCreateRecord;
+import tech.buildrun.time_futebol_server.record.TimeJogadorCreateRecord;
+import tech.buildrun.time_futebol_server.repository.JogadorRepository;
+import tech.buildrun.time_futebol_server.repository.TimeJogadorRepository;
+import tech.buildrun.time_futebol_server.record.TimeCreateRecord;
+import tech.buildrun.time_futebol_server.record.TimeJogadorCreateRecord;
+import tech.buildrun.time_futebol_server.repository.JogadorRepository;
+import tech.buildrun.time_futebol_server.repository.TimeJogadorRepository;
 import tech.buildrun.time_futebol_server.repository.TimeRepository;
 import tech.buildrun.time_futebol_server.repository.impl.TimeRepositoryImpl;
+import tech.buildrun.time_futebol_server.repository.impl.TimeRepositoryImpl;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +32,9 @@ public class TimeService {
 
     @Autowired
     private JogadorRepository jogadorRepository;
+
+    @Autowired
+    private TimeJogadorRepository timeJogadorRepository;
 
     @Autowired
     private TimeRepositoryImpl timeRepositoryImpl;
@@ -39,13 +51,89 @@ public class TimeService {
         TimeToSave.setHistoria(time.historia());
         TimeToSave.setCor(time.cor());
         TimeToSave.setEstado(time.estado());
+        Time timeSaved =  this.timeRepository.save(TimeToSave);
         if (time.jogadores() != null && !time.jogadores().isEmpty()) {
             List<Jogador> jogadoresSalvos = jogadorRepository.saveAll(time.jogadores());
-            timeToSave.setJogadores(jogadoresSalvos);
+            jogadoresSalvos.forEach(jogador -> {
+                TimeJogador timeJogador = new TimeJogador(
+                        null,
+                        timeSaved,
+                        jogador,
+                        timeJogador.salario(),
+                        timeJogador.dtIniContrato(),
+                        timeJogador.dtFimContrato(),
+                        false
+                );
+                this.timeJogadorRepository.save(timeJogador);
+            });
         }
-
-        return Optional.of(this.timeRepository.save(TimeToSave));
+        return Optional.of(timeSaved);
     }
+
+    @Transactional
+    public Optional<Time> salvarComJogador(TimeCreateRecord time) {
+        Time TimeToSave = new Time();
+        TimeToSave.setNome(time.nome());
+        TimeToSave.setDataFundacao(time.dataFundacao());
+        TimeToSave.setHistoria(time.historia());
+        TimeToSave.setCor(time.cor());
+        TimeToSave.setEstado(time.estado());
+        Time timeSaved =  this.timeRepository.save(TimeToSave);
+        if (time.jogadores() != null && !time.jogadores().isEmpty()) {
+            List<Jogador> jogadoresSalvos = jogadorRepository.saveAll(time.jogadores());
+            jogadoresSalvos.forEach(jogador -> {
+                TimeJogador timeJogador = new TimeJogador(
+                        null,
+                        timeSaved,
+                        jogador,
+                        timeJogador.salario(),
+                        timeJogador.dtIniContrato(),
+                        timeJogador.dtFimContrato(),
+                        false
+                );
+                this.timeJogadorRepository.save(timeJogador);
+            });
+        }
+        return Optional.of(timeSaved);
+    }
+
+    @Transactional
+    public TimeJogador adicionarJogadorAoTime(Long timeId, Long jogadorId, TimeJogadorCreateRecord timeJogadorCreateRecord) {
+        Optional<Jogador> jogador = this.jogadorRepository.findById(jogadorId);
+        Optional<Time> time = this.timeRepository.findById(timeId);
+        if (jogador.isEmpty()) {
+            throw new RuntimeException("Jogador não encontrado com ID: " + jogadorId);
+        }
+        if (time.isEmpty()) {
+            throw new RuntimeException("Time não encontrado com ID: " + timeId);
+        }
+        TimeJogador timeJogador = new TimeJogador(
+                null,
+                time.get(),
+                jogador.get(),
+                timeJogadorCreateRecord.salario(),
+                timeJogadorCreateRecord.dtIniContrato(),
+                timeJogadorCreateRecord.dtFimContrato(),
+                false
+        );
+        return this.timeJogadorRepository.save(timeJogador);
+    }
+
+    @Transactional
+    public Time removerJogadorDoTime(Long timeJogadorId) {
+        Optional<TimeJogador> timeJogador = timeJogadorRepository.findById(timeJogadorId);
+                if(timeJogador.isEmpty()){
+                    throw new RuntimeException("TimeJogador não encontrado com ID: " + timeJogadorId);
+                }
+                    TimeJogador jogadorRemovido = timeJogador.get();
+                    jogadorRemovido.setContratoRompido(true);
+                    this.timeJogadorRepository.save(jogadorRemovido);
+
+                    return jogadorRemovido.getTime();
+    }
+
+//    @Transactional
+//    public Optional<Time> alterar(Long id, TimeCreateRecord time) {}
 
     @Transactional
     public Optional<Time> excluir(Long id) {
@@ -76,7 +164,7 @@ public class TimeService {
     public Page<Time> pesquisa(
             Pageable pageable,
             String nome,
-            String dataFundacao,
+            LocalDate dataFundacao,
             String estado,
             String cor,
             String historia
@@ -89,47 +177,9 @@ public class TimeService {
                 cor,
                 historia
         );
-        @Transactional
-        public Time adicionarJogadorAoTime(Long id, Jogador jogadorNovo) {
-            Time time = timeRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Time não encontrado com ID: " + id));
-            if (jogadorNovo.getNome() == null || jogadorNovo.getPosicao() == null) {
-                throw new RuntimeException("Dados do jogador inválidos");
-            }
-            jogadorNovo.setTime(time);
-            jogadorRepository.save(jogadorNovo);
-            time.getJogadores().add(jogadorNovo);
-            return timeRepository.save(time);
-        }
 
-
-        @Transactional
-        public List<Jogador> listarJogadoresDoTime(Long id) {
-            Time time = timeRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Time não encontrado com ID: " + id));
-            return time.getJogadores();
-        }
-        @Transactional
-        public Time removerJogadorDoTime(Long id, Long id) {
-            Time time = timeRepository.findById(id)
-                    .orElseThrow(() -> new RuntimeException("Time não encontrado com ID: " + id));
-            Jogador jogador = jogadorRepository.findById(jogadorId)
-                    .orElseThrow(() -> new RuntimeException("Jogador não encontrado com ID: " + id));
-            if (!time.getJogadores().contains(jogador)) {
-                throw new RuntimeException("O jogador não pertence a este time.");
-            }
-            time.getJogadores().remove(jogador);
-            jogador.setTime(null);
-            jogadorRepository.save(jogador);
-            return timeRepository.save(time);
-        }
     }
-//    public void adicionarJogador(Jogador jogador) {
-//        jogador.setTime(this);
-//        this.jogadores.add(jogador);
-//    }
-//
-//    public void removerJogador(int index) {
-//        this.jogadores.remove(index);
+//    private Jogador mapperJogador(JogadorDTO jogadorDTO) {
+//        Jogador newJogador = new Jogador(null, jogadorDTO.getNome(), jogadorDTO.getPosicao(), jogadorDTO.getDataNascimento(), jogadorDTO.getNacionalidade(),jogadorDTO.getPeso(), jogadorDTO.getAltura());
 //    }
 }

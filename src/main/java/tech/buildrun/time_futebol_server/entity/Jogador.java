@@ -3,12 +3,15 @@ package tech.buildrun.time_futebol_server.entity;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "jogador")
@@ -23,27 +26,21 @@ public class Jogador implements Serializable {
     @Column(name = "nome", nullable = false)
     private String nome;
 
-    @ManyToOne
     @JoinColumn(name = "posicao", referencedColumnName = "id", nullable = false)
     private String posicao;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     @Column(name = "data_nascimento")
-    private LocalDateTime dataNascimento;
+    private LocalDate dataNascimento;
 
     @Column(name = "nacionalidade", nullable = false)
     private String nacionalidade;
 
-    @ManyToOne
-    @JoinColumn(name = "id_time", referencedColumnName = "id_time", nullable = false)
-    private Time time;
-
     @Column(name = "peso", nullable = false, columnDefinition = "numeric(6,3)")
     private Double peso;
 
-    @Column(name = "peso", nullable = false, columnDefinition = "numeric(4,2)")
+    @Column(name = "altura", nullable = false, columnDefinition = "numeric(4,2)")
     private Double altura;
-
 
     public Long getId() {
         return id;
@@ -69,11 +66,11 @@ public class Jogador implements Serializable {
         this.posicao = posicao;
     }
 
-    public LocalDateTime getDataNascimento() {
+    public LocalDate getDataNascimento() {
         return dataNascimento;
     }
 
-    public void setDataNascimento(LocalDateTime dataNascimento) {
+    public void setDataNascimento(LocalDate dataNascimento) {
         this.dataNascimento = dataNascimento;
     }
 
